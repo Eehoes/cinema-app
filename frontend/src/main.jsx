@@ -15,6 +15,8 @@ import movie4 from "./assets/movie4.jpg";
 import loginImage from "./assets/login.jpg";
 
 
+
+// auto test //
 function main() {
 
   /* =========================

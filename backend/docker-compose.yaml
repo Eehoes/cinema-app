@@ -1,0 +1,71 @@
+services:
+
+  mysql:
+    image: mysql:8.0
+    container_name: cinema-mysql
+
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234
+      MYSQL_DATABASE: cinema
+
+    ports:
+      - "3306:3306"
+
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-uroot",
+          "-p1234"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: cinema-phpmyadmin
+
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+
+    ports:
+      - "8081:80"
+
+    depends_on:
+      - mysql
+
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: cinema-backend
+
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: cinema
+      DB_USER: root
+      DB_PASSWORD: 1234
+
+    ports:
+      - "8080:8080"
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+
+volumes:
+  mysql-data:

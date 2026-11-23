@@ -25,7 +25,7 @@ public class QueueService {
      *
      * 이후 10, 20 등으로 조정 가능.
      */
-    private static final long MAX_ACTIVE_USERS = 5;
+    private static final long MAX_ACTIVE_USERS = 10;
 
     /*
      * 입장 후 일정 시간 동안 아무 동작이 없으면

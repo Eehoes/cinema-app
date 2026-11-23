@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import "./booking.css";
+import "./queue.css";
 
 function booking({
   movies,
@@ -9,6 +10,7 @@ function booking({
   /* =========================
      단계
      select = 영화/시간 선택
+     queue  = 대기열
      seat   = 좌석 선택
   ========================= */
 
@@ -46,6 +48,28 @@ function booking({
     unavailableSeats,
     setUnavailableSeats
   ] = useState([]);
+
+
+  /* =========================
+     Queue 상태
+  ========================= */
+
+  const [
+    queuePosition,
+    setQueuePosition
+  ] = useState(null);
+
+
+  const [
+    queueWaitingCount,
+    setQueueWaitingCount
+  ] = useState(0);
+
+
+  const [
+    queueAdmitted,
+    setQueueAdmitted
+  ] = useState(false);
 
 
   /* =========================
@@ -87,6 +111,352 @@ function booking({
 
 
   /* =========================
+     현재 로그인 사용자
+  ========================= */
+
+  const getUsername = () => {
+    return localStorage.getItem(
+      "username"
+    );
+  };
+
+
+  /* =========================
+     Queue 상태 적용
+  ========================= */
+
+  const applyQueueResponse = (
+    data
+  ) => {
+
+    if (data.allowed) {
+
+      setQueueAdmitted(
+        true
+      );
+
+      setQueuePosition(
+        0
+      );
+
+      setQueueWaitingCount(
+        data.waitingCount ?? 0
+      );
+
+      setStep(
+        "select"
+      );
+
+      return true;
+    }
+
+
+    setQueueAdmitted(
+      false
+    );
+
+
+    setQueuePosition(
+      data.position ?? null
+    );
+
+
+    setQueueWaitingCount(
+      data.waitingCount ?? 0
+    );
+
+
+    setStep(
+      "queue"
+    );
+
+
+    return false;
+  };
+
+
+  /* =========================
+     Queue 참가
+  ========================= */
+
+  const joinQueue =
+    async () => {
+
+      const username =
+        getUsername();
+
+
+      if (!username) {
+
+        alert(
+          "로그인이 필요합니다."
+        );
+
+        goMain();
+
+        return false;
+      }
+
+
+      try {
+
+        const response =
+          await fetch(
+            `/api/queue/join?userId=${encodeURIComponent(username)}`,
+            {
+              method: "POST"
+            }
+          );
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            "대기열 참가 실패"
+          );
+        }
+
+
+        const data =
+          await response.json();
+
+
+        return applyQueueResponse(
+          data
+        );
+
+      }
+
+      catch (error) {
+
+        console.error(
+          "대기열 참가 오류:",
+          error
+        );
+
+
+        alert(
+          "대기열 서버에 연결할 수 없습니다."
+        );
+
+
+        return false;
+      }
+
+    };
+
+
+  /* =========================
+     Queue 상태 조회
+  ========================= */
+
+  const checkQueueStatus =
+    async () => {
+
+      const username =
+        getUsername();
+
+
+      if (!username) {
+        return;
+      }
+
+
+      try {
+
+        const response =
+          await fetch(
+            `/api/queue/status?userId=${encodeURIComponent(username)}`
+          );
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            "대기열 조회 실패"
+          );
+        }
+
+
+        const data =
+          await response.json();
+
+
+        applyQueueResponse(
+          data
+        );
+
+      }
+
+      catch (error) {
+
+        console.error(
+          "대기열 상태 조회 오류:",
+          error
+        );
+
+      }
+
+    };
+
+
+  /* =========================
+     Queue Heartbeat
+  ========================= */
+
+  const sendHeartbeat =
+    async () => {
+
+      const username =
+        getUsername();
+
+
+      if (!username) {
+        return;
+      }
+
+
+      try {
+
+        await fetch(
+          `/api/queue/heartbeat?userId=${encodeURIComponent(username)}`,
+          {
+            method: "POST"
+          }
+        );
+
+      }
+
+      catch (error) {
+
+        console.error(
+          "대기열 heartbeat 오류:",
+          error
+        );
+
+      }
+
+    };
+
+
+  /* =========================
+     Queue 퇴장
+  ========================= */
+
+  const leaveQueue =
+    async () => {
+
+      const username =
+        getUsername();
+
+
+      if (!username) {
+        return;
+      }
+
+
+      try {
+
+        await fetch(
+          `/api/queue/leave?userId=${encodeURIComponent(username)}`,
+          {
+            method: "DELETE"
+          }
+        );
+
+      }
+
+      catch (error) {
+
+        console.error(
+          "대기열 퇴장 오류:",
+          error
+        );
+
+      }
+
+
+      setQueueAdmitted(
+        false
+      );
+
+
+      setQueuePosition(
+        null
+      );
+
+
+      setQueueWaitingCount(
+        0
+      );
+
+    };
+
+
+  /* =========================
+     대기 중 Polling
+     5초마다 순번 확인
+  ========================= */
+
+  useEffect(() => {
+
+    if (
+      step !== "queue"
+    ) {
+      return;
+    }
+
+
+    const interval =
+      setInterval(() => {
+
+        checkQueueStatus();
+
+      }, 5000);
+
+
+    return () =>
+      clearInterval(
+        interval
+      );
+
+  }, [step]);
+
+
+  /* =========================
+     입장 후 Heartbeat
+     30초마다 Active 유지
+  ========================= */
+
+  useEffect(() => {
+
+    if (
+      !queueAdmitted
+    ) {
+      return;
+    }
+
+
+    sendHeartbeat();
+
+
+    const interval =
+      setInterval(() => {
+
+        sendHeartbeat();
+
+      }, 30000);
+
+
+    return () =>
+      clearInterval(
+        interval
+      );
+
+  }, [queueAdmitted]);
+
+
+  /* =========================
      예약 완료 좌석 조회
   ========================= */
 
@@ -100,9 +470,14 @@ function booking({
         !movieTitle ||
         !showTime
       ) {
-        setUnavailableSeats([]);
+
+        setUnavailableSeats(
+          []
+        );
+
         return;
       }
+
 
       try {
 
@@ -115,7 +490,7 @@ function booking({
               "CINEMA 강남",
 
             showTime:
-              showTime,
+              showTime
           });
 
 
@@ -154,13 +529,15 @@ function booking({
           "예약 좌석 조회 오류:",
           error
         );
+
       }
 
     };
 
 
   /* =========================
-     영화/시간 변경 시 좌석 조회
+     좌석 화면 진입 시
+     예약 좌석 조회
   ========================= */
 
   useEffect(() => {
@@ -187,23 +564,48 @@ function booking({
 
   /* =========================
      영화 선택
+     → Queue 진입
   ========================= */
 
-  const selectMovie = (
-    movie
-  ) => {
-
-    setSelectedMovie(
+  const selectMovie =
+    async (
       movie
-    );
+    ) => {
 
-    setSelectedTime("");
+      setSelectedMovie(
+        movie
+      );
 
-    setSelectedSeats([]);
 
-    setUnavailableSeats([]);
+      setSelectedTime(
+        ""
+      );
 
-  };
+
+      setSelectedSeats(
+        []
+      );
+
+
+      setUnavailableSeats(
+        []
+      );
+
+
+      /*
+       * 이미 Queue 입장 허용 상태라면
+       * 다시 Queue 등록하지 않음
+       */
+      if (
+        queueAdmitted
+      ) {
+        return;
+      }
+
+
+      await joinQueue();
+
+    };
 
 
   /* =========================
@@ -221,7 +623,16 @@ function booking({
       );
 
       return;
+    }
 
+
+    if (!queueAdmitted) {
+
+      alert(
+        "대기열 입장 후 예매할 수 있습니다."
+      );
+
+      return;
     }
 
 
@@ -230,7 +641,9 @@ function booking({
     );
 
 
-    setSelectedSeats([]);
+    setSelectedSeats(
+      []
+    );
 
 
     setStep(
@@ -255,7 +668,6 @@ function booking({
     ) {
 
       return;
-
     }
 
 
@@ -304,14 +716,11 @@ function booking({
         );
 
         return;
-
       }
 
 
       const username =
-        localStorage.getItem(
-          "username"
-        );
+        getUsername();
 
 
       if (!username) {
@@ -320,10 +729,11 @@ function booking({
           "로그인 정보가 없습니다."
         );
 
+        await leaveQueue();
+
         goMain();
 
         return;
-
       }
 
 
@@ -338,11 +748,12 @@ function booking({
           await fetch(
             "/api/reservation",
             {
-              method: "POST",
+              method:
+                "POST",
 
               headers: {
                 "Content-Type":
-                  "application/json",
+                  "application/json"
               },
 
               body: JSON.stringify({
@@ -364,8 +775,8 @@ function booking({
                   ),
 
                 price:
-                  price,
-              }),
+                  price
+              })
             }
           );
 
@@ -374,6 +785,10 @@ function booking({
           await response.text();
 
 
+        /*
+         * 다른 사용자가 먼저
+         * 같은 좌석 예약
+         */
         if (
           response.status === 409
         ) {
@@ -390,7 +805,9 @@ function booking({
           );
 
 
-          setSelectedSeats([]);
+          setSelectedSeats(
+            []
+          );
 
           return;
         }
@@ -408,13 +825,14 @@ function booking({
           );
 
           return;
-
         }
 
 
-        /* =========================
-           저장 성공
-        ========================= */
+        /*
+         * =========================
+         * 저장 성공
+         * =========================
+         */
 
         await loadOccupiedSeats(
           selectedMovie.title,
@@ -422,7 +840,16 @@ function booking({
         );
 
 
-        setSelectedSeats([]);
+        setSelectedSeats(
+          []
+        );
+
+
+        /*
+         * 예매가 끝났으므로
+         * Active Queue 자리 반환
+         */
+        await leaveQueue();
 
 
         setCompleteOpen(
@@ -459,6 +886,21 @@ function booking({
     };
 
 
+  /* =========================
+     메인으로 이동
+     Queue 자리 반환
+  ========================= */
+
+  const exitBooking =
+    async () => {
+
+      await leaveQueue();
+
+      goMain();
+
+    };
+
+
   return (
 
     <div className="booking-page">
@@ -471,7 +913,9 @@ function booking({
       <header className="booking-header">
 
         <h1
-          onClick={goMain}
+          onClick={
+            exitBooking
+          }
         >
           CINEMA
         </h1>
@@ -479,8 +923,116 @@ function booking({
       </header>
 
 
-
       <main className="booking-container">
+
+
+        {/* =========================
+            QUEUE
+        ========================= */}
+
+        {step === "queue" && (
+
+          <div className="queue-page">
+
+            <div className="queue-card">
+
+
+              <div className="queue-spinner">
+              </div>
+
+
+              <h2>
+                예매 접속 대기 중
+              </h2>
+
+
+              <p className="queue-description">
+                현재 접속자가 많아
+                순차적으로 입장하고 있습니다.
+              </p>
+
+
+              <div className="queue-position-box">
+
+                <span>
+                  현재 대기 순번
+                </span>
+
+
+                <strong>
+
+                  {
+                    queuePosition ??
+                    "-"
+                  }
+
+                </strong>
+
+
+                <small>
+                  번째
+                </small>
+
+              </div>
+
+
+              <p className="queue-ahead">
+
+                대기열 앞에{" "}
+
+                <strong>
+                  {
+                    queuePosition
+                      ? Math.max(
+                          queuePosition - 1,
+                          0
+                        )
+                      : 0
+                  }
+                </strong>
+
+                명이 있습니다.
+
+              </p>
+
+
+              <div className="queue-info">
+
+                <span>
+                  전체 대기 인원
+                </span>
+
+                <strong>
+                  {
+                    queueWaitingCount
+                  }
+                  명
+                </strong>
+
+              </div>
+
+
+              <p className="queue-auto-text">
+                순서가 되면 자동으로 입장합니다.
+              </p>
+
+
+              <button
+                className="queue-cancel-button"
+
+                onClick={
+                  exitBooking
+                }
+              >
+                대기 취소
+              </button>
+
+            </div>
+
+          </div>
+
+        )}
+
 
 
         {/* =========================
@@ -495,8 +1047,6 @@ function booking({
               빠른예매
             </h2>
 
-
-            {/* 날짜 */}
 
             <div className="booking-date-bar">
 
@@ -525,20 +1075,12 @@ function booking({
             </div>
 
 
-
-            {/* =====================
-                영화 / 극장 / 시간
-            ===================== */}
-
             <div className="booking-select-layout">
 
 
-              {/* =====================
-                  영화
-              ===================== */}
+              {/* 영화 */}
 
               <section className="selection-column movie-column">
-
 
                 <div className="selection-title">
 
@@ -559,7 +1101,6 @@ function booking({
 
 
                 <div className="simple-movie-list">
-
 
                   {movies.map(
                     (movie) => (
@@ -611,13 +1152,9 @@ function booking({
               </section>
 
 
-
-              {/* =====================
-                  극장
-              ===================== */}
+              {/* 극장 */}
 
               <section className="selection-column theater-column">
-
 
                 <div className="selection-title">
 
@@ -638,7 +1175,6 @@ function booking({
 
 
                 <div className="theater-select-area">
-
 
                   <div className="region-list">
 
@@ -662,13 +1198,9 @@ function booking({
               </section>
 
 
-
-              {/* =====================
-                  시간
-              ===================== */}
+              {/* 시간 */}
 
               <section className="selection-column time-column">
-
 
                 <div className="selection-title">
 
@@ -703,7 +1235,6 @@ function booking({
                 {selectedMovie && (
 
                   <div className="time-list">
-
 
                     <div className="selected-info">
 
@@ -776,7 +1307,10 @@ function booking({
 
             <button
               className="booking-main-button"
-              onClick={goMain}
+
+              onClick={
+                exitBooking
+              }
             >
               메인으로 돌아가기
             </button>
@@ -803,10 +1337,7 @@ function booking({
             <div className="seat-layout">
 
 
-              {/* 좌석 */}
-
               <section className="seat-main">
-
 
                 <div className="seat-title">
 
@@ -834,7 +1365,6 @@ function booking({
 
 
                 <div className="seat-map">
-
 
                   {rows.map(
                     (row) => (
@@ -915,13 +1445,7 @@ function booking({
               </section>
 
 
-
-              {/* =====================
-                  오른쪽 예매 정보
-              ===================== */}
-
               <aside className="seat-summary">
-
 
                 <div className="summary-top">
 
@@ -1002,12 +1526,10 @@ function booking({
                     선택 좌석
                   </span>
 
-
                   <strong>
 
                     {
-                      selectedSeats.length ===
-                      0
+                      selectedSeats.length === 0
                         ? "-"
                         : selectedSeats.join(
                             ", "
@@ -1028,6 +1550,7 @@ function booking({
                     {
                       selectedSeats.length
                     }
+
                     석
 
                   </strong>
@@ -1105,7 +1628,6 @@ function booking({
         )}
 
       </main>
-
 
 
       {/* =========================

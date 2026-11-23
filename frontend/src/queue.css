@@ -1,0 +1,143 @@
+.queue-page {
+  min-height: 650px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 60px 20px;
+  box-sizing: border-box;
+}
+
+.queue-card {
+  width: 100%;
+  max-width: 520px;
+  padding: 50px 45px;
+  box-sizing: border-box;
+  background: #ffffff;
+  border-radius: 18px;
+  text-align: center;
+  box-shadow:
+    0 12px 40px
+    rgba(0, 0, 0, 0.12);
+}
+
+.queue-card h2 {
+  margin: 22px 0 12px;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.queue-description {
+  margin: 0 0 35px;
+  color: #777777;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.queue-spinner {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto;
+  border: 5px solid #eeeeee;
+  border-top-color: #333333;
+  border-radius: 50%;
+  animation: queue-spin 1s linear infinite;
+}
+
+@keyframes queue-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.queue-position-box {
+  margin: 25px 0 15px;
+  padding: 28px 20px;
+  background: #f6f6f6;
+  border-radius: 14px;
+}
+
+.queue-position-box span {
+  display: block;
+  margin-bottom: 8px;
+  color: #777777;
+  font-size: 14px;
+}
+
+.queue-position-box strong {
+  font-size: 54px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.queue-position-box small {
+  margin-left: 5px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.queue-ahead {
+  margin: 20px 0;
+  font-size: 17px;
+}
+
+.queue-ahead strong {
+  font-size: 21px;
+}
+
+.queue-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 25px 0;
+  padding: 16px 18px;
+  background: #fafafa;
+  border: 1px solid #eeeeee;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.queue-info strong {
+  font-size: 16px;
+}
+
+.queue-auto-text {
+  margin: 25px 0;
+  color: #777777;
+  font-size: 14px;
+}
+
+.queue-cancel-button {
+  width: 100%;
+  height: 48px;
+  margin-top: 10px;
+  border: none;
+  border-radius: 8px;
+  background: #333333;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.queue-cancel-button:hover {
+  background: #111111;
+}
+
+@media (max-width: 600px) {
+
+  .queue-page {
+    padding: 30px 15px;
+  }
+
+  .queue-card {
+    padding: 35px 25px;
+  }
+
+  .queue-position-box strong {
+    font-size: 44px;
+  }
+}

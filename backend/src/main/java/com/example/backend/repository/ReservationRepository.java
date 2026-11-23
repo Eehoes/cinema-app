@@ -8,8 +8,7 @@ import java.util.List;
 public interface ReservationRepository
         extends JpaRepository<Reservation, Long> {
 
-    List<Reservation>
-    findByUsernameOrderByIdDesc(
+    List<Reservation> findByUsernameOrderByIdDesc(
             String username
     );
 }

@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./booking.css";
-
 
 function booking({
   movies,
@@ -9,7 +8,6 @@ function booking({
 
   /* =========================
      단계
-
      select = 영화/시간 선택
      seat   = 좌석 선택
   ========================= */
@@ -37,6 +35,16 @@ function booking({
   const [
     selectedSeats,
     setSelectedSeats
+  ] = useState([]);
+
+
+  /* =========================
+     예약 완료 좌석
+  ========================= */
+
+  const [
+    unavailableSeats,
+    setUnavailableSeats
   ] = useState([]);
 
 
@@ -78,20 +86,103 @@ function booking({
   ];
 
 
-  /*
-    현재는 임시 예매 완료 좌석.
+  /* =========================
+     예약 완료 좌석 조회
+  ========================= */
 
-    나중에는 DB에서 가져오게 변경할 예정.
-  */
+  const loadOccupiedSeats =
+    async (
+      movieTitle,
+      showTime
+    ) => {
 
-  const unavailableSeats = [
-    "A4",
-    "B7",
-    "C2",
-    "D5",
-    "E3",
-    "F8"
-  ];
+      if (
+        !movieTitle ||
+        !showTime
+      ) {
+        setUnavailableSeats([]);
+        return;
+      }
+
+      try {
+
+        const params =
+          new URLSearchParams({
+            movieTitle:
+              movieTitle,
+
+            theater:
+              "CINEMA 강남",
+
+            showTime:
+              showTime,
+          });
+
+
+        const response =
+          await fetch(
+            `/api/reservation/occupied?${params.toString()}`
+          );
+
+
+        if (!response.ok) {
+
+          console.error(
+            "예약 좌석 조회 실패:",
+            response.status
+          );
+
+          return;
+        }
+
+
+        const result =
+          await response.json();
+
+
+        setUnavailableSeats(
+          Array.isArray(result)
+            ? result
+            : []
+        );
+
+      }
+
+      catch (error) {
+
+        console.error(
+          "예약 좌석 조회 오류:",
+          error
+        );
+      }
+
+    };
+
+
+  /* =========================
+     영화/시간 변경 시 좌석 조회
+  ========================= */
+
+  useEffect(() => {
+
+    if (
+      step === "seat" &&
+      selectedMovie &&
+      selectedTime
+    ) {
+
+      loadOccupiedSeats(
+        selectedMovie.title,
+        selectedTime
+      );
+
+    }
+
+  }, [
+    step,
+    selectedMovie,
+    selectedTime
+  ]);
 
 
   /* =========================
@@ -107,6 +198,10 @@ function booking({
     );
 
     setSelectedTime("");
+
+    setSelectedSeats([]);
+
+    setUnavailableSeats([]);
 
   };
 
@@ -241,7 +336,7 @@ function booking({
 
         const response =
           await fetch(
-            "http://localhost:8080/reservation",
+            "/api/reservation",
             {
               method: "POST",
 
@@ -279,9 +374,32 @@ function booking({
           await response.text();
 
 
+        if (
+          response.status === 409
+        ) {
+
+          alert(
+            result ||
+            "이미 예약된 좌석이 포함되어 있습니다."
+          );
+
+
+          await loadOccupiedSeats(
+            selectedMovie.title,
+            selectedTime
+          );
+
+
+          setSelectedSeats([]);
+
+          return;
+        }
+
+
         if (!response.ok) {
 
           alert(
+            result ||
             "예매 저장 중 오류가 발생했습니다."
           );
 
@@ -297,6 +415,15 @@ function booking({
         /* =========================
            저장 성공
         ========================= */
+
+        await loadOccupiedSeats(
+          selectedMovie.title,
+          selectedTime
+        );
+
+
+        setSelectedSeats([]);
+
 
         setCompleteOpen(
           true

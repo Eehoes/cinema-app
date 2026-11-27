@@ -17,7 +17,6 @@ function booking({
   const [step, setStep] =
     useState("select");
 
-
   /* =========================
      선택 정보
   ========================= */
@@ -27,18 +26,15 @@ function booking({
     setSelectedMovie
   ] = useState(null);
 
-
   const [
     selectedTime,
     setSelectedTime
   ] = useState("");
 
-
   const [
     selectedSeats,
     setSelectedSeats
   ] = useState([]);
-
 
   /* =========================
      예약 완료 좌석
@@ -49,7 +45,6 @@ function booking({
     setUnavailableSeats
   ] = useState([]);
 
-
   /* =========================
      Queue 상태
   ========================= */
@@ -59,18 +54,15 @@ function booking({
     setQueuePosition
   ] = useState(null);
 
-
   const [
     queueWaitingCount,
     setQueueWaitingCount
   ] = useState(0);
 
-
   const [
     queueAdmitted,
     setQueueAdmitted
   ] = useState(false);
-
 
   /* =========================
      예매 완료창
@@ -81,9 +73,11 @@ function booking({
     setCompleteOpen
   ] = useState(false);
 
-
   /* =========================
      좌석 데이터
+     A ~ J
+     1 ~ 12
+     총 120석
   ========================= */
 
   const rows = [
@@ -93,9 +87,11 @@ function booking({
     "D",
     "E",
     "F",
-    "G"
+    "G",
+    "H",
+    "I",
+    "J"
   ];
-
 
   const numbers = [
     1,
@@ -106,9 +102,11 @@ function booking({
     6,
     7,
     8,
-    9
+    9,
+    10,
+    11,
+    12
   ];
-
 
   /* =========================
      현재 로그인 사용자
@@ -120,7 +118,6 @@ function booking({
     );
   };
 
-
   /* =========================
      Queue 상태 적용
   ========================= */
@@ -131,49 +128,33 @@ function booking({
 
     if (data.allowed) {
 
-      setQueueAdmitted(
-        true
-      );
+      setQueueAdmitted(true);
 
-      setQueuePosition(
-        0
-      );
+      setQueuePosition(0);
 
       setQueueWaitingCount(
         data.waitingCount ?? 0
       );
 
-      setStep(
-        "select"
-      );
+      setStep("select");
 
       return true;
     }
 
-
-    setQueueAdmitted(
-      false
-    );
-
+    setQueueAdmitted(false);
 
     setQueuePosition(
       data.position ?? null
     );
 
-
     setQueueWaitingCount(
       data.waitingCount ?? 0
     );
 
-
-    setStep(
-      "queue"
-    );
-
+    setStep("queue");
 
     return false;
   };
-
 
   /* =========================
      Queue 참가
@@ -184,7 +165,6 @@ function booking({
 
       const username =
         getUsername();
-
 
       if (!username) {
 
@@ -197,7 +177,6 @@ function booking({
         return false;
       }
 
-
       try {
 
         const response =
@@ -208,7 +187,6 @@ function booking({
             }
           );
 
-
         if (!response.ok) {
 
           throw new Error(
@@ -216,10 +194,8 @@ function booking({
           );
         }
 
-
         const data =
           await response.json();
-
 
         return applyQueueResponse(
           data
@@ -234,17 +210,13 @@ function booking({
           error
         );
 
-
         alert(
           "대기열 서버에 연결할 수 없습니다."
         );
 
-
         return false;
       }
-
     };
-
 
   /* =========================
      Queue 상태 조회
@@ -256,11 +228,9 @@ function booking({
       const username =
         getUsername();
 
-
       if (!username) {
         return;
       }
-
 
       try {
 
@@ -269,7 +239,6 @@ function booking({
             `/api/queue/status?userId=${encodeURIComponent(username)}`
           );
 
-
         if (!response.ok) {
 
           throw new Error(
@@ -277,10 +246,8 @@ function booking({
           );
         }
 
-
         const data =
           await response.json();
-
 
         applyQueueResponse(
           data
@@ -294,11 +261,8 @@ function booking({
           "대기열 상태 조회 오류:",
           error
         );
-
       }
-
     };
-
 
   /* =========================
      Queue Heartbeat
@@ -310,11 +274,9 @@ function booking({
       const username =
         getUsername();
 
-
       if (!username) {
         return;
       }
-
 
       try {
 
@@ -333,11 +295,8 @@ function booking({
           "대기열 heartbeat 오류:",
           error
         );
-
       }
-
     };
-
 
   /* =========================
      Queue 퇴장
@@ -349,11 +308,9 @@ function booking({
       const username =
         getUsername();
 
-
       if (!username) {
         return;
       }
-
 
       try {
 
@@ -372,30 +329,15 @@ function booking({
           "대기열 퇴장 오류:",
           error
         );
-
       }
 
-
-      setQueueAdmitted(
-        false
-      );
-
-
-      setQueuePosition(
-        null
-      );
-
-
-      setQueueWaitingCount(
-        0
-      );
-
+      setQueueAdmitted(false);
+      setQueuePosition(null);
+      setQueueWaitingCount(0);
     };
-
 
   /* =========================
      대기 중 Polling
-     5초마다 순번 확인
   ========================= */
 
   useEffect(() => {
@@ -406,14 +348,12 @@ function booking({
       return;
     }
 
-
     const interval =
       setInterval(() => {
 
         checkQueueStatus();
 
       }, 5000);
-
 
     return () =>
       clearInterval(
@@ -422,10 +362,8 @@ function booking({
 
   }, [step]);
 
-
   /* =========================
      입장 후 Heartbeat
-     30초마다 Active 유지
   ========================= */
 
   useEffect(() => {
@@ -436,9 +374,7 @@ function booking({
       return;
     }
 
-
     sendHeartbeat();
-
 
     const interval =
       setInterval(() => {
@@ -447,14 +383,12 @@ function booking({
 
       }, 30000);
 
-
     return () =>
       clearInterval(
         interval
       );
 
   }, [queueAdmitted]);
-
 
   /* =========================
      예약 완료 좌석 조회
@@ -471,13 +405,10 @@ function booking({
         !showTime
       ) {
 
-        setUnavailableSeats(
-          []
-        );
+        setUnavailableSeats([]);
 
         return;
       }
-
 
       try {
 
@@ -493,12 +424,10 @@ function booking({
               showTime
           });
 
-
         const response =
           await fetch(
             `/api/reservation/occupied?${params.toString()}`
           );
-
 
         if (!response.ok) {
 
@@ -510,10 +439,8 @@ function booking({
           return;
         }
 
-
         const result =
           await response.json();
-
 
         setUnavailableSeats(
           Array.isArray(result)
@@ -529,15 +456,11 @@ function booking({
           "예약 좌석 조회 오류:",
           error
         );
-
       }
-
     };
 
-
   /* =========================
-     좌석 화면 진입 시
-     예약 좌석 조회
+     좌석 화면 진입 시 조회
   ========================= */
 
   useEffect(() => {
@@ -552,7 +475,6 @@ function booking({
         selectedMovie.title,
         selectedTime
       );
-
     }
 
   }, [
@@ -560,7 +482,6 @@ function booking({
     selectedMovie,
     selectedTime
   ]);
-
 
   /* =========================
      영화 선택
@@ -572,41 +493,22 @@ function booking({
       movie
     ) => {
 
-      setSelectedMovie(
-        movie
-      );
+      setSelectedMovie(movie);
 
+      setSelectedTime("");
 
-      setSelectedTime(
-        ""
-      );
+      setSelectedSeats([]);
 
+      setUnavailableSeats([]);
 
-      setSelectedSeats(
-        []
-      );
-
-
-      setUnavailableSeats(
-        []
-      );
-
-
-      /*
-       * 이미 Queue 입장 허용 상태라면
-       * 다시 Queue 등록하지 않음
-       */
       if (
         queueAdmitted
       ) {
         return;
       }
 
-
       await joinQueue();
-
     };
-
 
   /* =========================
      시간 선택
@@ -625,7 +527,6 @@ function booking({
       return;
     }
 
-
     if (!queueAdmitted) {
 
       alert(
@@ -635,23 +536,12 @@ function booking({
       return;
     }
 
+    setSelectedTime(time);
 
-    setSelectedTime(
-      time
-    );
+    setSelectedSeats([]);
 
-
-    setSelectedSeats(
-      []
-    );
-
-
-    setStep(
-      "seat"
-    );
-
+    setStep("seat");
   };
-
 
   /* =========================
      좌석 선택
@@ -666,10 +556,8 @@ function booking({
         seat
       )
     ) {
-
       return;
     }
-
 
     if (
       selectedSeats.includes(
@@ -683,7 +571,6 @@ function booking({
           (item) =>
             item !== seat
         )
-
       );
 
     }
@@ -694,11 +581,8 @@ function booking({
         ...selectedSeats,
         seat
       ]);
-
     }
-
   };
-
 
   /* =========================
      예매 완료 + Backend 저장
@@ -718,10 +602,8 @@ function booking({
         return;
       }
 
-
       const username =
         getUsername();
-
 
       if (!username) {
 
@@ -736,11 +618,9 @@ function booking({
         return;
       }
 
-
       const price =
         selectedSeats.length *
         14000;
-
 
       try {
 
@@ -780,15 +660,9 @@ function booking({
             }
           );
 
-
         const result =
           await response.text();
 
-
-        /*
-         * 다른 사용자가 먼저
-         * 같은 좌석 예약
-         */
         if (
           response.status === 409
         ) {
@@ -798,20 +672,15 @@ function booking({
             "이미 예약된 좌석이 포함되어 있습니다."
           );
 
-
           await loadOccupiedSeats(
             selectedMovie.title,
             selectedTime
           );
 
-
-          setSelectedSeats(
-            []
-          );
+          setSelectedSeats([]);
 
           return;
         }
-
 
         if (!response.ok) {
 
@@ -820,48 +689,25 @@ function booking({
             "예매 저장 중 오류가 발생했습니다."
           );
 
-          console.error(
-            result
-          );
+          console.error(result);
 
           return;
         }
-
-
-        /*
-         * =========================
-         * 저장 성공
-         * =========================
-         */
 
         await loadOccupiedSeats(
           selectedMovie.title,
           selectedTime
         );
 
+        setSelectedSeats([]);
 
-        setSelectedSeats(
-          []
-        );
-
-
-        /*
-         * 예매가 끝났으므로
-         * Active Queue 자리 반환
-         */
         await leaveQueue();
 
-
-        setCompleteOpen(
-          true
-        );
-
+        setCompleteOpen(true);
 
         setTimeout(() => {
 
-          setCompleteOpen(
-            false
-          );
+          setCompleteOpen(false);
 
           goMain();
 
@@ -876,19 +722,14 @@ function booking({
           error
         );
 
-
         alert(
           "백엔드 서버에 연결할 수 없습니다."
         );
-
       }
-
     };
-
 
   /* =========================
      메인으로 이동
-     Queue 자리 반환
   ========================= */
 
   const exitBooking =
@@ -897,18 +738,11 @@ function booking({
       await leaveQueue();
 
       goMain();
-
     };
-
 
   return (
 
     <div className="booking-page">
-
-
-      {/* =========================
-          HEADER
-      ========================= */}
 
       <header className="booking-header">
 
@@ -922,9 +756,7 @@ function booking({
 
       </header>
 
-
       <main className="booking-container">
-
 
         {/* =========================
             QUEUE
@@ -936,21 +768,17 @@ function booking({
 
             <div className="queue-card">
 
-
               <div className="queue-spinner">
               </div>
-
 
               <h2>
                 예매 접속 대기 중
               </h2>
 
-
               <p className="queue-description">
                 현재 접속자가 많아
                 순차적으로 입장하고 있습니다.
               </p>
-
 
               <div className="queue-position-box">
 
@@ -958,23 +786,18 @@ function booking({
                   현재 대기 순번
                 </span>
 
-
                 <strong>
-
                   {
                     queuePosition ??
                     "-"
                   }
-
                 </strong>
-
 
                 <small>
                   번째
                 </small>
 
               </div>
-
 
               <p className="queue-ahead">
 
@@ -995,7 +818,6 @@ function booking({
 
               </p>
 
-
               <div className="queue-info">
 
                 <span>
@@ -1011,15 +833,12 @@ function booking({
 
               </div>
 
-
               <p className="queue-auto-text">
                 순서가 되면 자동으로 입장합니다.
               </p>
 
-
               <button
                 className="queue-cancel-button"
-
                 onClick={
                   exitBooking
                 }
@@ -1033,8 +852,6 @@ function booking({
 
         )}
 
-
-
         {/* =========================
             영화 / 시간 선택
         ========================= */}
@@ -1047,13 +864,11 @@ function booking({
               빠른예매
             </h2>
 
-
             <div className="booking-date-bar">
 
               <button>
                 ‹
               </button>
-
 
               <div className="booking-date-selected">
 
@@ -1067,18 +882,13 @@ function booking({
 
               </div>
 
-
               <button>
                 ›
               </button>
 
             </div>
 
-
             <div className="booking-select-layout">
-
-
-              {/* 영화 */}
 
               <section className="selection-column movie-column">
 
@@ -1090,7 +900,6 @@ function booking({
 
                 </div>
 
-
                 <div className="simple-tab">
 
                   <button className="active">
@@ -1098,7 +907,6 @@ function booking({
                   </button>
 
                 </div>
-
 
                 <div className="simple-movie-list">
 
@@ -1128,15 +936,11 @@ function booking({
                           12
                         </span>
 
-
                         <span className="simple-movie-name">
-
                           {
                             movie.title
                           }
-
                         </span>
-
 
                         <span className="heart">
                           ♡
@@ -1151,9 +955,6 @@ function booking({
 
               </section>
 
-
-              {/* 극장 */}
-
               <section className="selection-column theater-column">
 
                 <div className="selection-title">
@@ -1164,7 +965,6 @@ function booking({
 
                 </div>
 
-
                 <div className="simple-tab">
 
                   <button className="active">
@@ -1172,7 +972,6 @@ function booking({
                   </button>
 
                 </div>
-
 
                 <div className="theater-select-area">
 
@@ -1183,7 +982,6 @@ function booking({
                     </div>
 
                   </div>
-
 
                   <div className="cinema-list">
 
@@ -1197,9 +995,6 @@ function booking({
 
               </section>
 
-
-              {/* 시간 */}
-
               <section className="selection-column time-column">
 
                 <div className="selection-title">
@@ -1209,7 +1004,6 @@ function booking({
                   </h3>
 
                 </div>
-
 
                 {!selectedMovie && (
 
@@ -1231,7 +1025,6 @@ function booking({
 
                 )}
 
-
                 {selectedMovie && (
 
                   <div className="time-list">
@@ -1249,7 +1042,6 @@ function booking({
                       </span>
 
                     </div>
-
 
                     {selectedMovie.times.map(
                       (time) => (
@@ -1275,7 +1067,6 @@ function booking({
                             </strong>
 
                           </div>
-
 
                           <div className="time-right">
 
@@ -1304,10 +1095,8 @@ function booking({
 
             </div>
 
-
             <button
               className="booking-main-button"
-
               onClick={
                 exitBooking
               }
@@ -1318,8 +1107,6 @@ function booking({
           </>
 
         )}
-
-
 
         {/* =========================
             좌석 선택
@@ -1333,9 +1120,7 @@ function booking({
               빠른예매
             </h2>
 
-
             <div className="seat-layout">
-
 
               <section className="seat-main">
 
@@ -1351,7 +1136,6 @@ function booking({
 
                 </div>
 
-
                 <div className="screen-area">
 
                   <div className="screen-line">
@@ -1362,7 +1146,6 @@ function booking({
                   </strong>
 
                 </div>
-
 
                 <div className="seat-map">
 
@@ -1378,25 +1161,21 @@ function booking({
                           {row}
                         </span>
 
-
                         {numbers.map(
                           (number) => {
 
                             const seat =
                               `${row}${number}`;
 
-
                             const unavailable =
                               unavailableSeats.includes(
                                 seat
                               );
 
-
                             const selected =
                               selectedSeats.includes(
                                 seat
                               );
-
 
                             return (
 
@@ -1423,11 +1202,9 @@ function booking({
                                   )
                                 }
                               >
-
                                 {
                                   number
                                 }
-
                               </button>
 
                             );
@@ -1444,7 +1221,6 @@ function booking({
 
               </section>
 
-
               <aside className="seat-summary">
 
                 <div className="summary-top">
@@ -1452,7 +1228,6 @@ function booking({
                   <span className="summary-age">
                     12
                   </span>
-
 
                   <div>
 
@@ -1470,7 +1245,6 @@ function booking({
 
                 </div>
 
-
                 <div className="summary-theater">
 
                   <strong>
@@ -1485,7 +1259,6 @@ function booking({
 
                 </div>
 
-
                 <div className="seat-status">
 
                   <div>
@@ -1497,7 +1270,6 @@ function booking({
 
                   </div>
 
-
                   <div>
 
                     <span className="status-color unavailable-status">
@@ -1506,7 +1278,6 @@ function booking({
                     예매완료
 
                   </div>
-
 
                   <div>
 
@@ -1518,7 +1289,6 @@ function booking({
                   </div>
 
                 </div>
-
 
                 <div className="selected-seat-info">
 
@@ -1540,30 +1310,24 @@ function booking({
 
                 </div>
 
-
                 <div className="selected-count">
 
                   총 좌석
 
                   <strong>
-
                     {
                       selectedSeats.length
                     }
-
                     석
-
                   </strong>
 
                 </div>
-
 
                 <div className="final-price">
 
                   <span>
                     최종결제금액
                   </span>
-
 
                   <strong>
 
@@ -1579,7 +1343,6 @@ function booking({
                   </strong>
 
                 </div>
-
 
                 <div className="seat-buttons">
 
@@ -1600,7 +1363,6 @@ function booking({
                   >
                     이전
                   </button>
-
 
                   <button
                     className="seat-next-button"
@@ -1629,19 +1391,12 @@ function booking({
 
       </main>
 
-
-      {/* =========================
-          예매 완료
-      ========================= */}
-
       {completeOpen && (
 
         <div className="booking-complete-background">
 
           <div className="booking-complete-box">
-
             예매가 완료되었습니다.
-
           </div>
 
         </div>
@@ -1651,8 +1406,6 @@ function booking({
     </div>
 
   );
-
 }
-
 
 export default booking;

@@ -21,23 +21,9 @@ function booking({
 
   const [completeOpen, setCompleteOpen] = useState(false);
 
-  /* =========================
-     좌석
-     A ~ J / 1 ~ 12
-     총 120석
-  ========================= */
-
   const rows = [
-    "A",
-    "B",
-    "C",
-    "D",
-    "E",
-    "F",
-    "G",
-    "H",
-    "I",
-    "J"
+    "A", "B", "C", "D", "E",
+    "F", "G", "H", "I", "J"
   ];
 
   const numbers = [
@@ -50,7 +36,7 @@ function booking({
   };
 
   /* =========================
-     Queue 응답 적용
+     Queue 응답 처리
   ========================= */
 
   const applyQueueResponse = (data) => {
@@ -60,26 +46,20 @@ function booking({
     );
 
     /*
-     * 입장 가능
+     * 바로 입장 가능
      */
     if (data.allowed) {
 
       setQueueAdmitted(true);
       setQueuePosition(0);
-
-      /*
-       * Queue 화면에서 ACTIVE가 되면
-       * 아주 잠깐 후 자동으로 예매 화면 이동
-       */
-      setTimeout(() => {
-        setStep("select");
-      }, 300);
+      setStep("select");
 
       return true;
     }
 
     /*
-     * 아직 대기 중
+     * 실제 대기자가 있을 때만
+     * Queue 화면 표시
      */
     setQueueAdmitted(false);
 
@@ -108,12 +88,6 @@ function booking({
       return false;
     }
 
-    /*
-     * 서버 응답 기다리는 동안에도
-     * 바로 Queue 화면 표시
-     */
-    setStep("queue");
-
     try {
 
       const response = await fetch(
@@ -124,7 +98,10 @@ function booking({
       );
 
       if (!response.ok) {
-        throw new Error("대기열 참가 실패");
+
+        throw new Error(
+          "대기열 참가 실패"
+        );
       }
 
       const data = await response.json();
@@ -141,8 +118,6 @@ function booking({
       alert(
         "대기열 서버에 연결할 수 없습니다."
       );
-
-      setStep("select");
 
       return false;
     }
@@ -249,9 +224,7 @@ function booking({
 
   /* =========================
      WAITING Polling
-
-     기존 5초
-     → 1초
+     1초마다 확인
   ========================= */
 
   useEffect(() => {
@@ -260,10 +233,6 @@ function booking({
       return;
     }
 
-    /*
-     * Queue 화면 진입하자마자
-     * 한 번 즉시 확인
-     */
     checkQueueStatus();
 
     const interval = setInterval(() => {
@@ -361,10 +330,6 @@ function booking({
     }
   };
 
-  /* =========================
-     Seat 화면 진입
-  ========================= */
-
   useEffect(() => {
 
     if (
@@ -387,9 +352,6 @@ function booking({
 
   /* =========================
      영화 선택
-
-     영화 클릭
-     → 바로 Queue
   ========================= */
 
   const selectMovie = async (movie) => {
@@ -400,18 +362,22 @@ function booking({
     setUnavailableSeats([]);
 
     /*
-     * 이미 입장 권한을 받은 사용자는
-     * Queue 재진입 필요 없음
+     * 이미 ACTIVE라면
+     * 다시 Queue 확인하지 않음
      */
     if (queueAdmitted) {
       return;
     }
 
     /*
-     * 바로 대기화면으로 이동
+     * 여기서는 Queue 화면을 먼저 띄우지 않는다.
+     *
+     * 서버에서 allowed=true이면
+     * 그냥 현재 화면 유지.
+     *
+     * allowed=false일 때만
+     * applyQueueResponse가 queue 화면으로 이동.
      */
-    setStep("queue");
-
     await joinQueue();
   };
 
@@ -426,17 +392,17 @@ function booking({
     }
 
     /*
-     * 입장 권한이 없다면
-     * alert를 띄우지 않고
-     * 바로 Queue 화면으로 이동
+     * 아직 Queue 체크를 통과하지 않았다면
+     * 다시 한번 확인
      */
     if (!queueAdmitted) {
 
-      setStep("queue");
+      const allowed =
+        await joinQueue();
 
-      await joinQueue();
-
-      return;
+      if (!allowed) {
+        return;
+      }
     }
 
     setSelectedTime(time);
@@ -541,9 +507,6 @@ function booking({
       const result =
         await response.text();
 
-      /*
-       * 이미 예약된 좌석
-       */
       if (
         response.status === 409
       ) {
@@ -581,8 +544,7 @@ function booking({
       setSelectedSeats([]);
 
       /*
-       * 예약 완료
-       * → Queue ACTIVE 슬롯 반환
+       * 예약 완료 후 ACTIVE 슬롯 반환
        */
       await leaveQueue();
 
@@ -609,10 +571,6 @@ function booking({
     }
   };
 
-  /* =========================
-     예매 종료
-  ========================= */
-
   const exitBooking = async () => {
 
     await leaveQueue();
@@ -633,10 +591,6 @@ function booking({
       </header>
 
       <main className="booking-container">
-
-        {/* =====================
-            QUEUE
-        ===================== */}
 
         {step === "queue" && (
 
@@ -720,10 +674,6 @@ function booking({
 
         )}
 
-        {/* =====================
-            영화 선택
-        ===================== */}
-
         {step === "select" && (
 
           <>
@@ -765,9 +715,11 @@ function booking({
                 </div>
 
                 <div className="simple-tab">
+
                   <button className="active">
                     전체
                   </button>
+
                 </div>
 
                 <div className="simple-movie-list">
@@ -817,9 +769,11 @@ function booking({
                 </div>
 
                 <div className="simple-tab">
+
                   <button className="active">
                     전체
                   </button>
+
                 </div>
 
                 <div className="theater-select-area">
@@ -900,9 +854,11 @@ function booking({
                         >
 
                           <div>
+
                             <strong>
                               {time}
                             </strong>
+
                           </div>
 
                           <div className="time-right">
@@ -940,10 +896,6 @@ function booking({
           </>
 
         )}
-
-        {/* =====================
-            좌석
-        ===================== */}
 
         {step === "seat" && (
 
@@ -1085,30 +1037,18 @@ function booking({
                 <div className="seat-status">
 
                   <div>
-
-                    <span className="status-color selected-status">
-                    </span>
-
+                    <span className="status-color selected-status"></span>
                     선택좌석
-
                   </div>
 
                   <div>
-
-                    <span className="status-color unavailable-status">
-                    </span>
-
+                    <span className="status-color unavailable-status"></span>
                     예매완료
-
                   </div>
 
                   <div>
-
-                    <span className="status-color normal-status">
-                    </span>
-
+                    <span className="status-color normal-status"></span>
                     선택가능
-
                   </div>
 
                 </div>

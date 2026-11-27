@@ -34,7 +34,7 @@ public class QueueService {
      * 현재 2분.
      */
     private static final long ACTIVE_TIMEOUT_MS =
-            Duration.ofMinutes(2).toMillis();
+            Duration.ofSeconds(30).toMillis();
 
     private final StringRedisTemplate redisTemplate;
 
